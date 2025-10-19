@@ -6,15 +6,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.retaildiscountservice.dto.BillRequest;
+import com.example.retaildiscountservice.dto.BillResponse;
+import com.example.retaildiscountservice.service.BillService;
 
 @RestController
 public class BillController {
 
+	@Autowired
+	BillService billService;
 
-	
-    @PostMapping("/calculate")
-    public ResponseEntity<Object> calculateDiscount(@RequestBody Object billRequest) {
+	@PostMapping("/calculate")
+	public ResponseEntity<Object> calculateDiscount(@RequestBody BillRequest billRequest) {
 
-        return ResponseEntity.ok(null);
-    }
+		BillResponse response = billService.calculatePayment(billRequest);
+
+		return ResponseEntity.ok(response);
+	}
 }
