@@ -8,16 +8,17 @@ import com.example.retaildiscountservice.dto.BillResponse;
 import com.example.retaildiscountservice.model.Bill;
 import com.example.retaildiscountservice.model.Customer;
 import com.example.retaildiscountservice.model.Item;
+import com.example.retaildiscountservice.repository.BillRepository;
 import com.example.retaildiscountservice.service.strategy.DiscountStrategy;
 
 @Component
 public class BillService {
 	private final List<DiscountStrategy> discountStrategies;
+	private final BillRepository billRepo;
 
-
-	public BillService(List<DiscountStrategy> discountStrategies) {
+	public BillService(List<DiscountStrategy> discountStrategies, BillRepository billRepo) {
 		this.discountStrategies = discountStrategies;
-
+		this.billRepo = billRepo;
 	}
 
 	/**
@@ -26,16 +27,7 @@ public class BillService {
 	public BillResponse calculatePayment(Bill bill) {
 
 		Customer customer = bill.getCustomer();
-		List<Item> items = bill.getItems();
-
-//        double totalAmount = items.stream()
-//                .mapToDouble(Item::getPrice)  // convert each Item to double
-//                .sum();
-
-//        double totalNonGroceryAmount = items.stream()
-//        		.filter(a-> a.getCategory().name().equalsIgnoreCase(ItemCategory.NON_GROCERY.name()))
-//                .mapToDouble(Item::getPrice)  // convert each Item to double
-//                .sum();
+//		List<Item> items = bill.getItems();
 
 		double percentageDiscount = 0;
 		int flatDiscount = 0;
@@ -57,6 +49,7 @@ public class BillService {
 		response.setFlatDiscount(flatDiscount);
 		response.setNetPayable(bill.getTotalAmount() - flatDiscount - percentageDiscount);
 
+		billRepo.save(bill);
 		return response;
 	}
 
