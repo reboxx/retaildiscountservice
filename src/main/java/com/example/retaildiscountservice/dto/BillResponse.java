@@ -2,20 +2,20 @@ package com.example.retaildiscountservice.dto;
 
 public class BillResponse {
 
-	private double totalAmount; // Sum of item prices before discount
+	private double totalAmountBeforeDiscount; // Sum of item prices before discount
 	private double percentageDiscount; // Highest percentage discount applied
 	private double flatDiscount; // Flat discount applied ($5 per $100)
-	private double netPayable; // Total after all discounts
+	private double totalAmountAfterDiscount; // Total after all discounts
 
 	public BillResponse() {
 	}
 
 	public double getTotalAmount() {
-		return totalAmount;
+		return totalAmountBeforeDiscount;
 	}
 
 	public void setTotalAmount(double totalAmount) {
-		this.totalAmount = totalAmount;
+		this.totalAmountBeforeDiscount = totalAmount;
 	}
 
 	public double getPercentageDiscount() {
@@ -35,11 +35,11 @@ public class BillResponse {
 	}
 
 	public double getNetPayable() {
-		return netPayable;
+		return totalAmountAfterDiscount;
 	}
 
 	public void setNetPayable(double netPayable) {
-		this.netPayable = netPayable;
+		this.totalAmountAfterDiscount = netPayable;
 	}
 
 }
