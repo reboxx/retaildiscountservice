@@ -33,16 +33,17 @@ public class BillService {
         }
 
         double percentageDiscount = 0;
-        int flatDiscount = 0;
+        double flatDiscount = 0;
 
         for (DiscountStrategy strategy : discountStrategies) {
-
-            if (strategy.isApplicable(customer) && strategy.isPercentageDiscount()) {
+            if (strategy.isApplicable(customer)) {
                 percentageDiscount = strategy.applyPercentage(bill);
-            } else if (strategy.isApplicable(customer)) {
-                flatDiscount = (int) strategy.applyPercentage(bill);
+                break;
             }
         }
+
+        // flat discount after percentage discount
+        flatDiscount = Math.floor((bill.getTotalAmount() - percentageDiscount) / 100) * 5;
 
         BillResponse response = new BillResponse();
         response.setTotalAmountBeforeDiscount(bill.getTotalAmount());

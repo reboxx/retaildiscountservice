@@ -9,5 +9,5 @@ public interface DiscountStrategy {
 
     double applyPercentage(Bill price);
 
-    boolean isPercentageDiscount();
+//    boolean isPercentageDiscount();
 }

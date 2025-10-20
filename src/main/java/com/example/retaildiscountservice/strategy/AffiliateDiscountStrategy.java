@@ -21,8 +21,8 @@ public class AffiliateDiscountStrategy implements DiscountStrategy {
         return bill.getTotalNonGroceryAmount() * 0.10;
     }
 
-    public boolean isPercentageDiscount() {
-        return true;
-    }
+//    public boolean isPercentageDiscount() {
+//        return true;
+//    }
 
 }

@@ -31,350 +31,389 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class})
+@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 class RetaildiscountserviceApplicationTests {
 
-	@Autowired
-	private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-	@MockBean
-	private BillRepository billRepository;
+    @MockBean
+    private BillRepository billRepository;
 
-	@Autowired
-	private ObjectMapper objectMapper;
-	
-	private final String ERROR_MSG= "Customer is blacklisted and not eligible for billing.";
+    @Autowired
+    private ObjectMapper objectMapper;
 
-	@Test
-	void testEmployeeNonGroceryDiscount() throws Exception {
+    private final String ERROR_MSG = "Customer is blacklisted and not eligible for billing.";
 
-		when(billRepository.save(any(Bill.class))).thenReturn(null);
+    /*
+     * test employee with non grocery items
+     */
+    @Test
+    void testEmployeeNonGroceryDiscount() throws Exception {
 
-		BillRequest request = getEmployeeRequest();
+        when(billRepository.save(any(Bill.class))).thenReturn(null);
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        BillRequest request = getEmployeeRequest();
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(90.0, response.getPercentageDiscount()); // 30% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(195.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-	}
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(90.0, response.getPercentageDiscount());
+        assertEquals(10.0, response.getFlatDiscount());
+        assertEquals(200.0, response.getTotalAmountAfterDiscount());
 
-	@Test
-	void testEmployeeGroceryDiscount() throws Exception {
+    }
 
-		BillRequest request = getEmployeeRequest();
-		request.getItems().get(0).setCategory(ItemCategory.GROCERY);
-		request.getItems().get(1).setCategory(ItemCategory.GROCERY);
+    /*
+     * test emplouee with only grocery items
+     */
+    @Test
+    void testEmployeeGroceryDiscount() throws Exception {
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        BillRequest request = getEmployeeRequest();
+        request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+        request.getItems().get(1).setCategory(ItemCategory.GROCERY);
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(0.0, response.getPercentageDiscount()); // 30% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(285.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-	}
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(0.0, response.getPercentageDiscount());
+        assertEquals(15.0, response.getFlatDiscount());
+        assertEquals(285.0, response.getTotalAmountAfterDiscount());
 
-	@Test
-	void testEmployeeMixedCategoryDiscount() throws Exception {
+    }
 
-		BillRequest request = getEmployeeRequest();
-		request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+    /*
+     * test employee with grocery and non-grocery items
+     */
+    @Test
+    void testEmployeeMixedCategoryDiscount() throws Exception {
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        BillRequest request = getEmployeeRequest();
+        request.getItems().get(0).setCategory(ItemCategory.GROCERY);
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(15.0, response.getPercentageDiscount()); // 30% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(270.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-	}
-	
-	@Test
-	void testEmployeeBlackListed() throws Exception {
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(15.0, response.getPercentageDiscount());
+        assertEquals(10.0, response.getFlatDiscount());
+        assertEquals(275.0, response.getTotalAmountAfterDiscount());
 
-		BillRequest request = getEmployeeRequest();
-		request.getCustomer().setBlacklisted(true);
+    }
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().is4xxClientError()).andReturn().getResponse().getContentAsString();
+    /*
+     * test employee who is blacklisted
+     */
+    @Test
+    void testEmployeeBlackListed() throws Exception {
 
+        BillRequest request = getEmployeeRequest();
+        request.getCustomer().setBlacklisted(true);
 
-		assertEquals(responseString, ERROR_MSG); 
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is4xxClientError()).andReturn().getResponse().getContentAsString();
 
-	}
+        assertEquals(responseString, ERROR_MSG);
 
-	@Test
-	void testLoyalCustomerNonGroceryDiscount() throws Exception {
+    }
 
-		BillRequest request = getLoyalCustomerRequest();
+    /*
+     * test loyal customer >2 years with only non-grocery items
+     */
+    @Test
+    void testLoyalCustomerNonGroceryDiscount() throws Exception {
+
+        BillRequest request = getLoyalCustomerRequest();
+
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(15.0, response.getPercentageDiscount());
+        assertEquals(10.0, response.getFlatDiscount());
+        assertEquals(275.0, response.getTotalAmountAfterDiscount());
+    }
+
+    /*
+     * test loyal customer >2 years with only grocery items
+     */
+    @Test
+    void testLoyalCustomerGroceryDiscount() throws Exception {
+
+        BillRequest request = getLoyalCustomerRequest();
+        request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+        request.getItems().get(1).setCategory(ItemCategory.GROCERY);
+
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
+        assertEquals(0.0, response.getPercentageDiscount()); // 0% )
+        assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
+        assertEquals(285.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+    }
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(15.0, response.getPercentageDiscount()); // 5% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(270.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+    /*
+     * test loyal customer >2 years with only grocery and non-grocery items
+     */
+    @Test
+    void testLoyalCustomerMixedCategoryDiscount() throws Exception {
 
-	}
+        BillRequest request = getLoyalCustomerRequest();
+        request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-	@Test
-	void testLoyalCustomerGroceryDiscount() throws Exception {
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-		BillRequest request = getLoyalCustomerRequest();
-		request.getItems().get(0).setCategory(ItemCategory.GROCERY);
-		request.getItems().get(1).setCategory(ItemCategory.GROCERY);
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(2.5, response.getPercentageDiscount());
+        assertEquals(10.0, response.getFlatDiscount());
+        assertEquals(287.5, response.getTotalAmountAfterDiscount());
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+    /*
+     * test loyal customer <2 years with only non-grocery items
+     */
+    @Test
+    void testLoyalCustomerNonGroceryDiscountLessThan2Years() throws Exception {
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(0.0, response.getPercentageDiscount()); // 0% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(285.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        BillRequest request = getLoyalCustomerRequest();
+        request.getCustomer().setJoinDate(LocalDate.now());
 
-	}
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-	@Test
-	void testLoyalCustomerMixedCategoryDiscount() throws Exception {
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-		BillRequest request = getLoyalCustomerRequest();
-		request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(0.0, response.getPercentageDiscount());
+        assertEquals(15.0, response.getFlatDiscount());
+        assertEquals(285.0, response.getTotalAmountAfterDiscount());
+    }
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    /*
+     * test loyal customer <2 years with only grocery items
+     */
+    @Test
+    void testLoyalCustomerGroceryDiscountLessThan2Years() throws Exception {
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+        BillRequest request = getLoyalCustomerRequest();
+        request.getCustomer().setJoinDate(LocalDate.now());
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(2.5, response.getPercentageDiscount()); // 30% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(282.5, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+        request.getItems().get(1).setCategory(ItemCategory.GROCERY);
 
-	}
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-	@Test
-	void testLoyalCustomerNonGroceryDiscountLessThan2Years() throws Exception {
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-		BillRequest request = getLoyalCustomerRequest();
-		request.getCustomer().setJoinDate(LocalDate.now());
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(0.0, response.getPercentageDiscount());
+        assertEquals(15.0, response.getFlatDiscount());
+        assertEquals(285.0, response.getTotalAmountAfterDiscount());
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+    /*
+     * test loyal customer <2 years with grocery and non-grocery items
+     */
+    @Test
+    void testLoyalCustomerMixedCategoryDiscountLessThan2Years() throws Exception {
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(0.0, response.getPercentageDiscount()); // 5% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(285.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        BillRequest request = getLoyalCustomerRequest();
+        request.getCustomer().setJoinDate(LocalDate.now());
 
-	}
+        request.getItems().get(0).setCategory(ItemCategory.GROCERY);
 
-	@Test
-	void testLoyalCustomerGroceryDiscountLessThan2Years() throws Exception {
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-		BillRequest request = getLoyalCustomerRequest();
-		request.getCustomer().setJoinDate(LocalDate.now());
-		
-		request.getItems().get(0).setCategory(ItemCategory.GROCERY);
-		request.getItems().get(1).setCategory(ItemCategory.GROCERY);
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(0.0, response.getPercentageDiscount());
+        assertEquals(15.0, response.getFlatDiscount());
+        assertEquals(285.0, response.getTotalAmountAfterDiscount());
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+    }
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(0.0, response.getPercentageDiscount()); // 0% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(285.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+    /*
+     * test loyal customer who is blacklisted
+     */
+    @Test
+    void testLoyalCustomerBlackListed() throws Exception {
 
-	}
+        BillRequest request = getLoyalCustomerRequest();
+        request.getCustomer().setBlacklisted(true);
 
-	@Test
-	void testLoyalCustomerMixedCategoryDiscountLessThan2Years() throws Exception {
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is4xxClientError()).andReturn().getResponse().getContentAsString();
 
-		BillRequest request = getLoyalCustomerRequest();
-		request.getCustomer().setJoinDate(LocalDate.now());
-		
-		request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+        assertEquals(ERROR_MSG, responseString);
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+    /*
+     * test affiliate customer with only non-grocery items
+     */
+    @Test
+    void testAffiliateNonGroceryDiscount() throws Exception {
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(0.0, response.getPercentageDiscount()); // 30% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(285.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        BillRequest request = getAffiliateRequest();
 
-	}
-	
-	@Test
-	void testLoyalCustomerBlackListed() throws Exception {
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-		BillRequest request = getLoyalCustomerRequest();
-		request.getCustomer().setBlacklisted(true);
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().is4xxClientError()).andReturn().getResponse().getContentAsString();
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(30.0, response.getPercentageDiscount());
+        assertEquals(10.0, response.getFlatDiscount());
+        assertEquals(260.0, response.getTotalAmountAfterDiscount());
 
+    }
 
-		assertEquals(ERROR_MSG, responseString); // 300
+    /*
+     * test affiliate customer with only grocery items
+     */
+    @Test
+    void testAffiliateGroceryDiscount() throws Exception {
 
+        BillRequest request = getAffiliateRequest();
+        request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+        request.getItems().get(1).setCategory(ItemCategory.GROCERY);
 
-	}
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-	@Test
-	void testAffiliateNonGroceryDiscount() throws Exception {
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-		BillRequest request = getAffiliateRequest();
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(0.0, response.getPercentageDiscount());
+        assertEquals(15.0, response.getFlatDiscount());
+        assertEquals(285.0, response.getTotalAmountAfterDiscount());
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+    /*
+     * test affiliate customer with grocery and non-grocery items
+     */
+    @Test
+    void testAffiliateMixedCategoryDiscount() throws Exception {
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(30.0, response.getPercentageDiscount()); // 5% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(255.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        BillRequest request = getAffiliateRequest();
+        request.getItems().get(0).setCategory(ItemCategory.GROCERY);
 
-	}
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-	@Test
-	void testAffiliateGroceryDiscount() throws Exception {
+        BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
 
-		BillRequest request = getAffiliateRequest();
-		request.getItems().get(0).setCategory(ItemCategory.GROCERY);
-		request.getItems().get(1).setCategory(ItemCategory.GROCERY);
+        assertEquals(300.0, response.getTotalAmountBeforeDiscount());
+        assertEquals(5.0, response.getPercentageDiscount());
+        assertEquals(10.0, response.getFlatDiscount());
+        assertEquals(285.0, response.getTotalAmountAfterDiscount());
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+    /*
+     * test affiliate customer who is blacklisted
+     */
+    @Test
+    void testAffiliateDiscountBlackListed() throws Exception {
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(0.0, response.getPercentageDiscount()); // 0% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(285.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        BillRequest request = getAffiliateRequest();
+        request.getCustomer().setBlacklisted(true);
 
-	}
+        String responseString = mockMvc
+                .perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is4xxClientError()).andReturn().getResponse().getContentAsString();
 
-	@Test
-	void testAffiliateMixedCategoryDiscount() throws Exception {
+        assertEquals(ERROR_MSG, responseString);
 
-		BillRequest request = getAffiliateRequest();
-		request.getItems().get(0).setCategory(ItemCategory.GROCERY);
+    }
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    private BillRequest getEmployeeRequest() {
 
-		BillResponse response = objectMapper.readValue(responseString, BillResponse.class);
+        BillRequest request = new BillRequest();
+        Customer cust = new Customer(1, "test_name", Role.EMPLOYEE, LocalDate.now(), false);
+        List<Item> items = List.of(new Item(1, "test_name", ItemCategory.NON_GROCERY, 250),
+                new Item(2, "test_name", ItemCategory.NON_GROCERY, 50));
+        request.setCustomer(cust);
+        request.setItems(items);
 
-		assertEquals(300.0, response.getTotalAmountBeforeDiscount()); // 300
-		assertEquals(5.0, response.getPercentageDiscount()); // 30% )
-		assertEquals(15.0, response.getFlatDiscount()); // floor(1050/100)*5
-		assertEquals(280.0, response.getTotalAmountAfterDiscount()); // total - percentage - flat
+        return request;
+    }
 
-	}
-	
-	@Test
-	void testAffiliateDiscountBlackListed() throws Exception {
+    private BillRequest getLoyalCustomerRequest() {
 
-		BillRequest request = getAffiliateRequest();
-		request.getCustomer().setBlacklisted(true);
+        BillRequest request = new BillRequest();
+        Customer cust = new Customer(1, "test_name", Role.LOYAL_CUSTOMER, LocalDate.now().minusYears(4), false);
+        List<Item> items = List.of(new Item(1, "test_name", ItemCategory.NON_GROCERY, 250),
+                new Item(2, "test_name", ItemCategory.NON_GROCERY, 50));
+        request.setCustomer(cust);
+        request.setItems(items);
 
-		String responseString = mockMvc
-				.perform(post("/calculate").contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(request)))
-				.andExpect(status().is4xxClientError()).andReturn().getResponse().getContentAsString();
+        return request;
+    }
 
+    private BillRequest getAffiliateRequest() {
 
-		assertEquals(ERROR_MSG, responseString); // 300
+        BillRequest request = new BillRequest();
+        Customer cust = new Customer(1, "test_name", Role.AFFILIATE, LocalDate.now(), false);
+        List<Item> items = List.of(new Item(1, "test_name", ItemCategory.NON_GROCERY, 250),
+                new Item(2, "test_name", ItemCategory.NON_GROCERY, 50));
+        request.setCustomer(cust);
+        request.setItems(items);
 
-	}
-
-	private BillRequest getEmployeeRequest() {
-
-		BillRequest request = new BillRequest();
-		Customer cust = new Customer(1, "test_name", Role.EMPLOYEE, LocalDate.now(), false);
-		List<Item> items = List.of(new Item(1, "test_name", ItemCategory.NON_GROCERY, 250),
-				new Item(2, "test_name", ItemCategory.NON_GROCERY, 50));
-		request.setCustomer(cust);
-		request.setItems(items);
-
-		return request;
-	}
-
-	private BillRequest getLoyalCustomerRequest() {
-
-		BillRequest request = new BillRequest();
-		Customer cust = new Customer(1, "test_name", Role.LOYAL_CUSTOMER, LocalDate.now().minusYears(4), false);
-		List<Item> items = List.of(new Item(1, "test_name", ItemCategory.NON_GROCERY, 250),
-				new Item(2, "test_name", ItemCategory.NON_GROCERY, 50));
-		request.setCustomer(cust);
-		request.setItems(items);
-
-		return request;
-	}
-
-	private BillRequest getAffiliateRequest() {
-
-		BillRequest request = new BillRequest();
-		Customer cust = new Customer(1, "test_name", Role.AFFILIATE, LocalDate.now(), false);
-		List<Item> items = List.of(new Item(1, "test_name", ItemCategory.NON_GROCERY, 250),
-				new Item(2, "test_name", ItemCategory.NON_GROCERY, 50));
-		request.setCustomer(cust);
-		request.setItems(items);
-
-		return request;
-	}
+        return request;
+    }
 
 }
