@@ -16,7 +16,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'mvn clean compile'
+                bat 'mvn -q clean compile'
             }
         }
 
@@ -27,16 +27,10 @@ pipeline {
         }
 
         stage('Code Coverage') {
-            steps {
-                bat 'mvn jacoco:report'
-            }
-            post {
-                always {
-                    jacoco execPattern: '**\\target\\jacoco.exec',
-                           classPattern: '**\\target\\classes',
-                           sourcePattern: '**\\src\\main\\java'
-                }
-            }
+    		steps {
+        		bat 'mvn jacoco:report'
+    		}
+     
         }
 
         stage('Checkstyle') {
