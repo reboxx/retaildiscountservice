@@ -23,7 +23,29 @@ The service supports three types of customers: **Employee**, **Affiliate**, and 
 **API:** RESTful endpoints using request/response DTOs.  
 **Testing:** JUnit and MockMvc tests included.
 
----
+## Project Strucutre ##
+```
+retaildiscountservice/
+├── src/
+│ ├── main/
+│ │ ├── java/
+│ │ │ └── com/example/retaildiscountservice/
+│ │ │ ├── controller/ # REST controllers
+│ │ │ ├── dto/ # Request and response DTOs
+│ │ │ ├── model/ # JPA entities and enums
+│ │ │ ├── repository/ # Spring Data JPA repositories
+│ │ │ ├── strategy/ # strategies to calculate discount
+│ │ │ └── service/ # Business logic
+│ │ └── resources/
+│ │ └── application.properties
+│ └── test/
+│ └── java/ # Unit and integration tests
+├── target/ # jacoco test report
+├── pom.xml # Maven build file
+├── Jenkinsfile # CI/CD pipeline
+└── README.md # Project documentation
+
+```
 
 ## How to Build, Run, and Test
 
