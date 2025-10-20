@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main', 
-                    url: 'https://github.com/yourusername/retaildiscountservice.git', 
+                    url: 'https://github.com/reboxx/retaildiscountservice.git', 
                     credentialsId: 'github-token'
             }
         }
