@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'JDK17'       // Match your pom java.version
-        maven 'Maven3'    // Match your Jenkins Maven installation
-    }
-
     stages {
         stage('Checkout') {
             steps {
