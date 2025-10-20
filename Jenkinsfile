@@ -46,9 +46,12 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                bat 'mvn sonar:sonar'
-            }
+    		when {
+        		environment name: 'SONAR_HOST_URL', value: '' // runs only if SONAR_HOST_URL is set
+    		}
+    		steps {
+        		bat 'mvn sonar:sonar'
+    		}
         }
     }
 
