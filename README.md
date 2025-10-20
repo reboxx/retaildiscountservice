@@ -58,6 +58,8 @@ Execute the following commands in the folder containing `pom.xml`.
 
 ---
 
+
+
 ## 📝 API Example
 
 ### Endpoint
@@ -106,7 +108,10 @@ POST /calculate
 
 ## Assumptions
 
-* Discounts apply only to **non-grocery items**.
+* Percentage Discounts applied only to **non-grocery items price**.
+* Percentage Discounts apply only to **to the original amount**.
+* Flat Discounts applied only to **to the original amount** before the percentage discount.
+
 * Customer types:
 
   * **EMPLOYEE:** 30% discount; not eligible for loyalty discount
